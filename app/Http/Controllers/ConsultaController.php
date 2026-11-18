@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Spatie\Browsershot\Browsershot;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ConsultaController extends Controller
 {
@@ -100,23 +100,18 @@ class ConsultaController extends Controller
         $folio = preg_replace('/[^A-Za-z0-9_-]/', '', $d['folio'] ?? 'informe');
         $sufijo = $conImagenes ? 'con-imagen' : 'sin-imagen';
 
-        // Renderizamos la vista Blade en HTML plano para pasársela a Chrome
-        $html = view('pages.ConsultaPdf', [
+        // Generamos el PDF con dompdf (solo PHP, funciona en hosting compartido)
+        $pdfBinary = Pdf::loadView('pages.ConsultaPdf', [
             'd' => $d,
             'conImagenes' => $conImagenes
-        ])->render();
-
-        // Generamos el PDF usando Browsershot (Chrome Headless)
-        $pdfBinary = Browsershot::html($html)
-            ->setOption('args', ['--no-sandbox', '--disable-setuid-sandbox'])
-            ->format('Letter')
-            ->setScreenshotType('pdf')
-            ->margins(0, 0, 0, 0)
-            ->pdf();
+        ])
+            ->setPaper('letter', 'portrait')
+            ->output();
 
         return response()->streamDownload(
             fn() => print($pdfBinary),
-            "Informe_{$folio}_{$sufijo}.pdf"
+            "Informe_{$folio}_{$sufijo}.pdf",
+            ['Content-Type' => 'application/pdf']
         );
     }
 }

@@ -52,7 +52,6 @@
 
         table {
             border-collapse: collapse;
-            table-layout: fixed;
             width: 100%;
         }
 
